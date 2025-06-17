@@ -1,4 +1,4 @@
-import { defineApp } from "rwsdk/worker";
+import { defineApp } from "rwsdk/worker-vite-rsc";
 import { render, route } from "rwsdk/router";
 
 import { Document } from "@/app/Document";

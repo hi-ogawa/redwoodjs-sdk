@@ -107,6 +107,7 @@ export const initClient = async ({
   hydrateRoot(rootEl, <Content />);
 
   if (import.meta.hot) {
+    // @ts-ignore
     import.meta.hot.on("rsc:update", (e) => {
       console.log("[rwsdk] hot update", e.file);
       callServer("__rsc_hot_update", [e.file]);

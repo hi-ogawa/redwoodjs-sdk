@@ -3,6 +3,7 @@ import rsc from "@hiogawa/vite-rsc/plugin";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 import react from "@vitejs/plugin-react";
 import { RunnableDevEnvironment, defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig((_env) => ({
   clearScreen: false,
@@ -10,6 +11,7 @@ export default defineConfig((_env) => ({
     minify: false,
   },
   plugins: [
+    tsconfigPaths(),
     react(),
     rsc({
       entries: {

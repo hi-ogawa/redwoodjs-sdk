@@ -1,4 +1,4 @@
-import * as ReactServer from "@hiogawa/vite-rsc/rsc";
+// import * as ReactServer from "@hiogawa/vite-rsc/rsc";
 import type { ReactFormState } from "react-dom/client";
 // import { Root } from "../root.tsx";
 import type { RenderHTML } from "./entry.ssr.tsx";
@@ -9,88 +9,94 @@ export type RscPayload = {
   formState?: ReactFormState;
 };
 
-async function handler(request: Request): Promise<Response> {
-  // handle server function request
-  const isAction = request.method === "POST";
-  let returnValue: unknown | undefined;
-  let formState: ReactFormState | undefined;
-  let temporaryReferences: unknown | undefined;
-  if (isAction) {
-    // x-rsc-action header exists when action is called via `ReactClient.setServerCallback`.
-    const actionId = request.headers.get("x-rsc-action");
-    if (actionId) {
-      const contentType = request.headers.get("content-type");
-      const body = contentType?.startsWith("multipart/form-data")
-        ? await request.formData()
-        : await request.text();
-      temporaryReferences = ReactServer.createTemporaryReferenceSet();
-      const args = await ReactServer.decodeReply(body, { temporaryReferences });
-      const action = await ReactServer.loadServerAction(actionId);
-      returnValue = await action.apply(null, args);
-    } else {
-      // otherwise server function is called via `<form action={...}>`
-      // before hydration (e.g. when javascript is disabled).
-      // aka progressive enhancement.
-      const formData = await request.formData();
-      const decodedAction = await ReactServer.decodeAction(formData);
-      const result = await decodedAction();
-      formState = await ReactServer.decodeFormState(result, formData);
-    }
-  }
+// async function handler(
+//   request: Request,
+//   env: any,
+//   ctx: any
+// ): Promise<Response> {
+//   return app.fetch(request, env, ctx);
 
-  // serialization from React VDOM tree to RSC stream.
-  // we render RSC stream after handling server function request
-  // so that new render reflects updated state from server function call
-  // to achieve single round trip to mutate and fetch from server.
-  function Root() {
-    return (
-      <html>
-        <body>hello</body>
-      </html>
-    );
-  }
-  const rscStream = ReactServer.renderToReadableStream<RscPayload>({
-    // in this example, we always render the same `<Root />`
-    root: <Root />,
-    returnValue,
-    formState,
-  });
+//   // handle server function request
+//   const isAction = request.method === "POST";
+//   let returnValue: unknown | undefined;
+//   let formState: ReactFormState | undefined;
+//   let temporaryReferences: unknown | undefined;
+//   if (isAction) {
+//     // x-rsc-action header exists when action is called via `ReactClient.setServerCallback`.
+//     const actionId = request.headers.get("x-rsc-action");
+//     if (actionId) {
+//       const contentType = request.headers.get("content-type");
+//       const body = contentType?.startsWith("multipart/form-data")
+//         ? await request.formData()
+//         : await request.text();
+//       temporaryReferences = ReactServer.createTemporaryReferenceSet();
+//       const args = await ReactServer.decodeReply(body, { temporaryReferences });
+//       const action = await ReactServer.loadServerAction(actionId);
+//       returnValue = await action.apply(null, args);
+//     } else {
+//       // otherwise server function is called via `<form action={...}>`
+//       // before hydration (e.g. when javascript is disabled).
+//       // aka progressive enhancement.
+//       const formData = await request.formData();
+//       const decodedAction = await ReactServer.decodeAction(formData);
+//       const result = await decodedAction();
+//       formState = await ReactServer.decodeFormState(result, formData);
+//     }
+//   }
 
-  // respond RSC stream without HTML rendering based on framework's convention.
-  // here we use request header `content-type`.
-  // additionally we allow `?__rsc` and `?__html` to easily view payload directly.
-  const url = new URL(request.url);
-  const isRscRequest =
-    (!request.headers.get("accept")?.includes("text/html") &&
-      !url.searchParams.has("__html")) ||
-    url.searchParams.has("__rsc");
+//   // serialization from React VDOM tree to RSC stream.
+//   // we render RSC stream after handling server function request
+//   // so that new render reflects updated state from server function call
+//   // to achieve single round trip to mutate and fetch from server.
+//   function Root() {
+//     return (
+//       <html>
+//         <body>hello</body>
+//       </html>
+//     );
+//   }
+//   const rscStream = ReactServer.renderToReadableStream<RscPayload>({
+//     // in this example, we always render the same `<Root />`
+//     root: <Root />,
+//     returnValue,
+//     formState,
+//   });
 
-  if (isRscRequest) {
-    return new Response(rscStream, {
-      headers: {
-        "content-type": "text/x-component;charset=utf-8",
-        vary: "accept",
-      },
-    });
-  }
+//   // respond RSC stream without HTML rendering based on framework's convention.
+//   // here we use request header `content-type`.
+//   // additionally we allow `?__rsc` and `?__html` to easily view payload directly.
+//   const url = new URL(request.url);
+//   const isRscRequest =
+//     (!request.headers.get("accept")?.includes("text/html") &&
+//       !url.searchParams.has("__html")) ||
+//     url.searchParams.has("__rsc");
 
-  const renderHTML = await getRenderHTML(url.origin);
-  const htmlStream = await renderHTML(rscStream, {
-    formState,
-    options: {
-      // allow quick simulation of javscript disabled browser
-      debugNojs: url.searchParams.has("__nojs"),
-    },
-  });
+//   if (isRscRequest) {
+//     return new Response(rscStream, {
+//       headers: {
+//         "content-type": "text/x-component;charset=utf-8",
+//         vary: "accept",
+//       },
+//     });
+//   }
 
-  // respond html
-  return new Response(htmlStream, {
-    headers: {
-      "Content-type": "text/html",
-      vary: "accept",
-    },
-  });
-}
+//   const renderHTML = await getRenderHTML(url.origin);
+//   const htmlStream = await renderHTML(rscStream, {
+//     formState,
+//     options: {
+//       // allow quick simulation of javscript disabled browser
+//       debugNojs: url.searchParams.has("__nojs"),
+//     },
+//   });
+
+//   // respond html
+//   return new Response(htmlStream, {
+//     headers: {
+//       "Content-type": "text/html",
+//       vary: "accept",
+//     },
+//   });
+// }
 
 // delegate html rendering to ssr environment.
 // how they are communicated differs between dev and build.
@@ -106,6 +112,7 @@ async function getRenderHTML(origin: string): Promise<RenderHTML> {
   // for dev, ssr environment runs on node and is proxied through special endpoint.
   // error handling is likely more complicated but that would be same for two workers setup.
   return async (rscStream, options) => {
+    console.log({ rscStream, options });
     const proxyRequest = new Request(
       new URL("/__vite_rsc_render_html", origin),
       {
@@ -121,8 +128,14 @@ async function getRenderHTML(origin: string): Promise<RenderHTML> {
   };
 }
 
+import app from "../worker.js"
+
 export default {
-  fetch(request: Request) {
-    return handler(request);
+  async fetch(request: Request, env: any, ctx: any) {
+    const url = new URL(request.url);
+    (globalThis as any).__vite_rsc_render_html = await getRenderHTML(url.origin);
+
+    return app.fetch(request, env, ctx);
+    // return handler(request, env, ctx);
   },
 };

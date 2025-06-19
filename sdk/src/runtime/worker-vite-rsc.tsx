@@ -138,7 +138,10 @@ export const defineApp = <
           const pageElement = createPageElement(requestInfo, Page);
 
           const rscPayloadStream = ReactServer.renderToReadableStream({
-            node: pageElement,
+            node: <rw.Document>
+                {pageElement}
+              </rw.Document>,
+            // node: pageElement
             // actionResult:
             //   actionResult instanceof Response ? null : actionResult,
             // onError,
@@ -164,13 +167,23 @@ export const defineApp = <
             });
           }
 
-          const [rscPayloadStream1, rscPayloadStream2] = rscPayloadStream.tee();
+          // const [rscPayloadStream1, rscPayloadStream2] = rscPayloadStream.tee();
 
           let html: ReadableStream<any>;
 
-          html = await (globalThis as any).__vite_rsc_render_html(rscPayloadStream1, {
-            options: { nonce: rw.nonce }
-          });
+          const ssrModule: any = await import.meta.viteRsc.loadModule("ssr", "index")
+          html = await ssrModule.renderHTML(rscPayloadStream, { options: { nonce: rw.nonce } })
+          // html = await (globalThis as any).__vite_rsc_render_html(rscPayloadStream1, {
+          //   options: { nonce: rw.nonce }
+          // });
+
+          // const decoder = new TextDecoder()
+          // html = html.pipeThrough(new TransformStream({
+          //   transform(chunk, controller) {
+          //     console.log("HTML chunk", decoder.decode(chunk));
+          //     controller.enqueue(chunk);
+          //   }
+          // }))
 
           // if (rw.ssr) {
           //   html = await transformRscToHtmlStream({

@@ -141,7 +141,7 @@
     "unique-names-generator": "^4.7.1",
     "vibe-rules": "^0.2.31",
     "vite-tsconfig-paths": "^5.1.4",
-    "wrangler": "^4.16.0"
+    "wrangler": "^4.19.1"
   },
   "peerDependencies": {
     "@hiogawa/vite-rsc": "*",

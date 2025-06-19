@@ -1,7 +1,7 @@
 // import * as ReactServer from "@hiogawa/vite-rsc/rsc";
 import type { ReactFormState } from "react-dom/client";
 // import { Root } from "../root.tsx";
-import type { RenderHTML } from "./entry.ssr.tsx";
+// import type { RenderHTML } from "./entry.ssr.tsx";
 
 export type RscPayload = {
   root: React.ReactNode;
@@ -100,42 +100,39 @@ export type RscPayload = {
 
 // delegate html rendering to ssr environment.
 // how they are communicated differs between dev and build.
-async function getRenderHTML(origin: string): Promise<RenderHTML> {
-  // for build, ssr build is directly imported in the runtime.
-  if (!import.meta.env.DEV) {
-    const module = await import.meta.viteRsc.loadSsrModule<
-      typeof import("./entry.ssr.tsx")
-    >("index");
-    return module.renderHTML;
-  }
+// async function getRenderHTML(origin: string): Promise<RenderHTML> {
+//   // for build, ssr build is directly imported in the runtime.
+//   if (!import.meta.env.DEV) {
+//     const module = await import.meta.viteRsc.loadSsrModule<
+//       typeof import("./entry.ssr.tsx")
+//     >("index");
+//     return module.renderHTML;
+//   }
 
-  // for dev, ssr environment runs on node and is proxied through special endpoint.
-  // error handling is likely more complicated but that would be same for two workers setup.
-  return async (rscStream, options) => {
-    console.log({ rscStream, options });
-    const proxyRequest = new Request(
-      new URL("/__vite_rsc_render_html", origin),
-      {
-        method: "POST",
-        body: rscStream,
-        headers: {
-          "x-vite-rsc-render-html": JSON.stringify(options),
-        },
-      },
-    );
-    const response = await fetch(proxyRequest);
-    return response.body!;
-  };
-}
+//   // for dev, ssr environment runs on node and is proxied through special endpoint.
+//   // error handling is likely more complicated but that would be same for two workers setup.
+//   return async (rscStream, options) => {
+//     const proxyRequest = new Request(
+//       new URL("/__vite_rsc_render_html", origin),
+//       {
+//         method: "POST",
+//         body: rscStream,
+//         headers: {
+//           "x-vite-rsc-render-html": JSON.stringify(options),
+//         },
+//       },
+//     );
+//     const response = await fetch(proxyRequest);
+//     return response.body!;
+//   };
+// }
 
 import app from "../worker.js"
 
 export default {
   async fetch(request: Request, env: any, ctx: any) {
-    const url = new URL(request.url);
-    (globalThis as any).__vite_rsc_render_html = await getRenderHTML(url.origin);
-
+    (globalThis as any).__rsc_api = {
+    };
     return app.fetch(request, env, ctx);
-    // return handler(request, env, ctx);
   },
 };

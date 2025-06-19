@@ -45,6 +45,7 @@
       "./types/react.d.ts",
       "./types/global.d.ts",
       "./types/vite.d.ts",
+      "@hiogawa/vite-rsc/types",
       "@cloudflare/workers-types"
     ]
   }

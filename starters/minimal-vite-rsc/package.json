@@ -27,7 +27,7 @@
     "rwsdk": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.6.0",
+    "@cloudflare/vite-plugin": "1.6.0",
     "@hiogawa/vite-rsc": "^0.4.2",
     "@mjackson/node-fetch-server": "^0.7.0",
     "@types/node": "^22.14.0",
@@ -37,7 +37,7 @@
     "typescript": "^5.8.3",
     "vite": "^6.2.6",
     "vite-tsconfig-paths": "^5.1.4",
-    "wrangler": "^4.19.1"
+    "wrangler": "4.19.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

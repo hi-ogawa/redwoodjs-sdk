@@ -29,7 +29,9 @@ export async function renderHTML(
     // deserialization needs to be kicked off inside ReactDOMServer context
     // for ReactDomServer preinit/preloading to work
     payload ??= ReactClient.createFromReadableStream<RscPayload>(rscStream1);
-    return React.use(payload).root;
+    const resolved = React.use(payload);
+    // console.log(resolved);
+    return (resolved as any).node;
   }
 
   // render html (traditional SSR)

@@ -4,9 +4,7 @@ import * as ReactClient from "@hiogawa/vite-rsc/ssr"; // RSC API
 import React from "react";
 import type { ReactFormState } from "react-dom/client";
 import * as ReactDOMServer from "react-dom/server.edge";
-import type { RscPayload } from "./entry.rsc";
-
-export type RenderHTML = typeof renderHTML;
+import type { RscPayload } from "./entry.browser";
 
 export async function renderHTML(
   rscStream: ReadableStream,
@@ -29,9 +27,7 @@ export async function renderHTML(
     // deserialization needs to be kicked off inside ReactDOMServer context
     // for ReactDomServer preinit/preloading to work
     payload ??= ReactClient.createFromReadableStream<RscPayload>(rscStream1);
-    const resolved = React.use(payload);
-    // console.log(resolved);
-    return (resolved as any).node;
+    return React.use(payload).node;
   }
 
   // render html (traditional SSR)
@@ -55,10 +51,4 @@ export async function renderHTML(
   }
 
   return responseStream;
-}
-
-export async function renderHTMLDevProxy(request: Request) {
-  const meta = JSON.parse(request.headers.get("x-vite-rsc-render-html")!);
-  const htmlStream = await renderHTML(request.body!, meta);
-  return new Response(htmlStream);
 }

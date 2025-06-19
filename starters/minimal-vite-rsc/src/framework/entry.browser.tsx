@@ -2,7 +2,11 @@ import * as ReactClient from "@hiogawa/vite-rsc/browser";
 import { getRscStreamFromHtml } from "@hiogawa/vite-rsc/rsc-html-stream/browser";
 import React from "react";
 import * as ReactDOMClient from "react-dom/client";
-import type { RscPayload } from "./entry.rsc";
+
+export type RscPayload = {
+  node: React.ReactNode;
+  actionResult: unknown;
+};
 
 async function main() {
   // stash `setPayload` function to trigger re-rendering
@@ -28,13 +32,17 @@ async function main() {
       return listenNavigation(() => fetchRscPayload());
     }, []);
 
-    return payload.root;
+    return payload.node;
   }
 
   // re-fetch RSC and trigger re-rendering
   async function fetchRscPayload() {
     const payload = await ReactClient.createFromFetch<RscPayload>(
-      fetch(window.location.href),
+      fetch(window.location.href, {
+        headers: {
+          accept: "text/x-component",
+        },
+      }),
     );
     setPayload(payload);
   }
@@ -50,12 +58,13 @@ async function main() {
         body: await ReactClient.encodeReply(args, { temporaryReferences }),
         headers: {
           "x-rsc-action": id,
+          accept: "text/x-component",
         },
       }),
       { temporaryReferences },
     );
     setPayload(payload);
-    return payload.returnValue;
+    return payload.actionResult;
   });
 
   // hydration
@@ -65,7 +74,7 @@ async function main() {
     </React.StrictMode>
   );
   ReactDOMClient.hydrateRoot(document, browserRoot, {
-    formState: initialPayload.formState,
+    // formState: initialPayload.formState,
   });
 
   // implement server HMR by trigering re-fetch/render of RSC upon server code change

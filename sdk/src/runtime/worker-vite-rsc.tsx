@@ -4,7 +4,7 @@ import React from "react";
 
 // import { ssrLoadModule, ssrWebpackRequire } from "rwsdk/__ssr_bridge";
 // import { rscActionHandler } from "./register/worker";
-import { injectRSCPayload } from "rsc-html-stream/server";
+// import { injectRSCPayload } from "rsc-html-stream/server";
 import { ErrorResponse } from "./error";
 import {
   getRequestInfo,
@@ -17,7 +17,7 @@ import { Route, type RwContext, defineRoutes, route } from "./lib/router";
 import { generateNonce } from "./lib/utils";
 // import { IS_DEV } from "./constants";
 
-import * as ReactServer from "@hiogawa/vite-rsc/rsc"
+import * as ReactServer from "@hiogawa/vite-rsc/rsc";
 
 // declare global {
 //   type Env = {
@@ -107,7 +107,7 @@ export const defineApp = <
           }
 
           if (isSmokeTest) {
-            // pageElement = <SmokeTestWrapper>{pageElement}</SmokeTestWrapper>;
+            pageElement = <SmokeTestWrapper>{pageElement}</SmokeTestWrapper>;
           }
 
           return pageElement;
@@ -129,34 +129,61 @@ export const defineApp = <
           // }
 
           let actionResult: unknown = undefined;
-          const isRSCActionHandler = url.searchParams.has("__rsc_action_id");
-
+          // const isRSCActionHandler = url.searchParams.has("__rsc_action_id");
           // if (isRSCActionHandler) {
           //   actionResult = await rscActionHandler(request);
           // }
 
+          {
+            // handle server function request
+            const isAction = request.method === "POST";
+            let returnValue: unknown | undefined;
+            // let formState: ReactFormState | undefined;
+            let temporaryReferences: unknown | undefined;
+            if (isAction) {
+              // x-rsc-action header exists when action is called via `ReactClient.setServerCallback`.
+              const actionId = request.headers.get("x-rsc-action");
+              if (actionId) {
+                const contentType = request.headers.get("content-type");
+                const body = contentType?.startsWith("multipart/form-data")
+                  ? await request.formData()
+                  : await request.text();
+                temporaryReferences = ReactServer.createTemporaryReferenceSet();
+                const args = await ReactServer.decodeReply(body, {
+                  temporaryReferences,
+                });
+                const action = await ReactServer.loadServerAction(actionId);
+                returnValue = await action.apply(null, args);
+                actionResult = returnValue;
+              } else {
+                // TODO: progressive enhancement
+                // otherwise server function is called via `<form action={...}>`
+                // before hydration (e.g. when javascript is disabled).
+                // aka progressive enhancement.
+                // const formData = await request.formData();
+                // const decodedAction = await ReactServer.decodeAction(formData);
+                // const result = await decodedAction();
+                // formState = await ReactServer.decodeFormState(result, formData);
+              }
+            }
+          }
+
           const pageElement = createPageElement(requestInfo, Page);
 
-          const rscPayloadStream = ReactServer.renderToReadableStream({
-            node: <rw.Document>
-                {pageElement}
-              </rw.Document>,
-            // node: pageElement
-            // actionResult:
-            //   actionResult instanceof Response ? null : actionResult,
-            // onError,
-          }, { onError });
+          const rscPayloadStream = ReactServer.renderToReadableStream(
+            {
+              // TODO: why not render document here as rsc?
+              node: <rw.Document {...requestInfo}>{pageElement}</rw.Document>,
+              actionResult:
+                actionResult instanceof Response ? null : actionResult,
+            },
+            { onError },
+          );
           // const rscPayloadStream = renderToRscStream({
           //   node: pageElement,
           //   actionResult:
           //     actionResult instanceof Response ? null : actionResult,
           //   onError,
-          // });
-
-          // return new Response(rscPayloadStream, {
-          //   headers: {
-          //     "content-type": "text/x-component; charset=utf-8",
-          //   },
           // });
 
           if (isRSCRequest) {
@@ -169,10 +196,15 @@ export const defineApp = <
 
           // const [rscPayloadStream1, rscPayloadStream2] = rscPayloadStream.tee();
 
-          let html: ReadableStream<any>;
+          // let html: ReadableStream<any>;
 
-          const ssrModule: any = await import.meta.viteRsc.loadModule("ssr", "index")
-          html = await ssrModule.renderHTML(rscPayloadStream, { options: { nonce: rw.nonce } })
+          const ssrModule: any = await import.meta.viteRsc.loadModule(
+            "ssr",
+            "index",
+          );
+          const html = await ssrModule.renderHTML(rscPayloadStream, {
+            options: { nonce: rw.nonce },
+          });
           // html = await (globalThis as any).__vite_rsc_render_html(rscPayloadStream1, {
           //   options: { nonce: rw.nonce }
           // });
@@ -266,26 +298,26 @@ export const defineApp = <
   };
 };
 
-// export const SmokeTestWrapper: React.FC<{
-//   children: React.ReactNode;
-// }> = async ({ children }) => {
-//   const smokeTestInfo = await Object.values(
-//     await (
-//       import.meta as any as {
-//         glob: (path: string) => Promise<Record<string, () => Promise<any>>>;
-//       }
-//     ).glob("/src/app/components/__SmokeTest.tsx"),
-//   )[0]();
+export const SmokeTestWrapper: React.FC<{
+  children: React.ReactNode;
+}> = async ({ children }) => {
+  const smokeTestInfo = await Object.values(
+    await (
+      import.meta as any as {
+        glob: (path: string) => Promise<Record<string, () => Promise<any>>>;
+      }
+    ).glob("/src/app/components/__SmokeTest.tsx"),
+  )[0]();
 
-//   const SmokeTestInfo = smokeTestInfo.SmokeTestInfo as React.FC<any>;
+  const SmokeTestInfo = smokeTestInfo.SmokeTestInfo as React.FC<any>;
 
-//   return (
-//     <>
-//       <SmokeTestInfo />
-//       {children}
-//     </>
-//   );
-// };
+  return (
+    <>
+      <SmokeTestInfo />
+      {children}
+    </>
+  );
+};
 
 export const DefaultDocument: React.FC<{ children: React.ReactNode }> = ({
   children,

@@ -11,7 +11,9 @@ export default defineApp([
   setCommonHeaders(),
   ({ ctx }) => {
     // setup ctx here
-    ctx;
+    ctx
   },
-  render(Document, [route("/", Home)]),
+  render(Document, [
+    route('/', Home)
+  ])
 ]);

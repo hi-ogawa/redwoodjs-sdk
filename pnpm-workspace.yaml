@@ -2,4 +2,5 @@ packages:
   - "sdk"
   - "docs"
   - "starters/minimal"
+  - "starters/minimal-vite-rsc"
   - "starters/standard"

@@ -1,0 +1,49 @@
+import { cloudflare } from "@cloudflare/vite-plugin";
+import rsc, { __fix_cloudflare } from "@hiogawa/vite-rsc/plugin";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+export default defineConfig((_env) => ({
+  clearScreen: false,
+  build: {
+    minify: false,
+  },
+  plugins: [
+    tsconfigPaths(),
+    react(),
+    rsc({
+      entries: {
+        client: "./src/framework/entry.browser.tsx",
+        ssr: "./src/framework/entry.ssr.tsx",
+      },
+      serverHandler: false,
+      loadModuleDevProxy: true,
+    }),
+    __fix_cloudflare(),
+    cloudflare({
+      configPath: "./wrangler.jsonc",
+      viteEnvironment: {
+        name: "rsc",
+      },
+    }),
+  ],
+  environments: {
+    rsc: {
+      build: {
+        rollupOptions: {
+          // ensure `default` export only in cloudflare entry output
+          preserveEntrySignatures: "exports-only",
+        },
+      },
+    },
+    ssr: {
+      keepProcessEnv: false,
+      build: {
+        // build `ssr` inside `rsc` directory so that
+        // wrangler can deploy self-contained `dist/rsc`
+        outDir: "./dist/rsc/ssr",
+      },
+    },
+  },
+}));
